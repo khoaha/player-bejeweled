@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Bejeweled - Animatron HTML5 Player Demo</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<script src="../player/vendor/matrix.js" type="text/javascript"></script>
+		<script src="../player/player.js" type="text/javascript"></script>
+		<script src="../player/builder.js" type="text/javascript"></script>
+		<script src="../player/animatron_import.js" type="text/javascript"></script>
+
+		<script type="text/javascript">
+			var width = 6; var height = 8;
+			var numShapes = 5;
+			var board = new Array(height);
+			var icons = new Array(height);
+			
+			var busy = true;
+			
+			var selected = null;
+			
+			function swap(i, j) {
+				console.log("hit: "+i+", "+j);
+				if (!selected) {
+					selected = [i, j];
+				} else {
+					if ((Math.abs(selected[0] - i) == 1) != (Math.abs(selected[1] - j) == 1)) {
+						// swap
+						console.log("swapping: "+i+", "+j+" => "+selected);
+						check(i, j, selected[0], selected[1]);
+					}
+					selected = null;
+				}
+			}
+			
+			function check(i1, j1, i2, j2) {
+				var x = [];
+				var y = [];
+				// check columns
+				var cols = [j1];
+				if (j1 != j2)
+					cols.push(j2);
+				for (var j in cols) {
+					var chain = 1;
+					var last = null;
+					for (var i=Math.max(Math.min(i1-2, i2-2), 0); i<Math.min(Math.max(i1+3, i2+3), height); i++) {
+						if (board[i][j] == last) {
+							chain++;
+							if (chain == 3) {
+								// mark i-2 through i for removal
+								x.push(i);
+								y.push(j);
+							}
+						} else {
+							chain = 1;
+							last = board[i][j];
+						}
+					}
+				}
+				// check rows
+				var rows = [i1];
+				if (i1 != i2)
+					rows.push(i2);
+				for (var i in rows) {
+					var chain = 1;
+					var last = null;
+					for (var j=Math.max(Math.min(j1-2, j2-2), 0); j<Math.min(Math.max(j1+3, j2+3), width); j++) {
+						if (board[i][j] == last) {
+							chain++;
+							if (chain == 3) {
+								// mark j-2 through j for removal
+								x.push(i);
+								y.push(j);
+							}
+						} else {
+							chain = 1;
+							last = board[i][j];
+						}
+					}
+				}
+				
+				animateExchange(i1, j1, i2, j2);
+				
+				// remove marked jewels
+				while (x.length > 0)
+					board[x.pop(), y.pop()] = null;
+				restock();
+				
+				// TODO: redraw
+			}
+			
+			function restock() {
+				for (var j=0; j<width; j++)
+					for (var i=0; i<height; i++) {
+						if (board[i][j] == null) {
+							for (var k=i; k>0; k--)
+								board[k][j] = board[k-1][j];
+							board[0][j] = Math.floor(Math.random()*numShapes);
+						}
+					}
+			}
+			
+			function animateExchange(i1, j1, i2, j2) {
+				console.log("animate");
+				icons[i1][j1].trans([0, .25], [16 + 32*i1, 16+32*i2], [16 + 32*j1, 16+32*j2]);
+				icons[i2][j2].trans([0, .25], [16 + 32*i2, 16+32*i1], [16 + 32*j2, 16+32*j1]);
+			}
+			
+            function start() {
+                var b = Builder._$, B = Builder, C = anm.C;
+				
+				// 24x24
+          		var octagon = b().path([ [-4, -12], [-12, -4], [-12, 4], [-4, 12], [4, 12], [12, 4], [12, -4], [4, -12], [-4, -12] ]).fill('#aaa');
+				var diamond = b().path([ [0, -12], [-12, 0], [0, 12], [12, 0], [0, -12] ]).fill('#cc0');
+				var triangle = b().path([ [-12, 12], [0, -12], [12, 12], [-12, 12] ]).fill('#c0a');
+				var square = b().rect([0, 0], [24, 24]).fill('#c00');
+				var hexagon = b().path([ [0, -12], [-12, -6], [-12, 6], [0, 12], [12, 6], [12, -6], [0, -12] ]).fill('#fa0');
+				
+				var shape = [octagon, diamond, triangle, square, hexagon];
+    			
+				// init board
+				for (var i=0; i<height; i++) {
+					board[i] = new Array(width);
+					icons[i] = new Array(width);
+					for (var j=0; j<width; j++)
+						board[i][j] = Math.floor(Math.random()*numShapes);
+				}
+					
+                // canvas1
+                var scene1 = b();
+				
+				var area = b().rect([width*16, height*16], [width*32, height*32]).fill('#fff');
+				area.on(C.X_MCLICK, function(evt) { if (!busy) {
+					swap(Math.floor(evt.pos[0]/32),
+						Math.floor(evt.pos[1]/32));
+					}
+					return true;
+				});
+				scene1.add(area);
+				// draw from board
+				for (var i=0; i<height; i++)
+					for (var j=0; j<width; j++) {
+						scene1.add(icons[i][j] = b(shape[board[i][j]])
+								.move([16 + 32*j, 16 + 32*i])
+								.xscale([0, .5], [0, 1]));
+					}
+				
+				setTimeout("busy = false;", 500);
+				
+                createPlayer('canvas1', {'mode': C.M_DYNAMIC}).load(scene1).play();
+    
+            }
+        </script>
+      </head>
+
+	<body onload="start();">
+		<h1>Bejewled - Animatron HTML5 Player Demo</h1>
+
+		<!-- canvas1 -->
+		<canvas id="canvas1"></canvas>
+
+	</body>
+
+</html>
