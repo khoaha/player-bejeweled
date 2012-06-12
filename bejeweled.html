@@ -22,6 +22,7 @@
 			var swap1 = null;
 			var swap2 = null;
 			var swapTime = null;
+			var swapBack = 0;
 			var swapDone = 0;
 			
 			function swap(i, j) {
@@ -39,19 +40,27 @@
 			}
 			
 			function check(i1, j1, i2, j2) {
+				// swap
+				var temp = board[i1][j1];
+				board[i1][j1] = board[i2][j2];
+				board[i2][j2] = temp;
+				
 				var x = [];
 				var y = [];
-				// check columns
-				var cols = [j1];
+				// check rows
+				var rows = [j1];
 				if (j1 != j2)
-					cols.push(j2);
-				for (var j in cols) {
+					rows.push(j2);
+				for (var k=0; k<rows.length; k++) {
+					var i = rows[k];
 					var chain = 1;
 					var last = null;
-					for (var i=Math.max(Math.min(i1-2, i2-2), 0); i<Math.min(Math.max(i1+3, i2+3), height); i++) {
+					for (var j=Math.max(Math.min(i1-2, i2-2), 0); j<Math.min(Math.max(i1+3, i2+3), height); j++) {
+						//console.log(i, j, chain, board[i][j], last);
 						if (board[i][j] == last) {
 							chain++;
 							if (chain == 3) {
+								console.log("row");
 								// mark i-2 through i for removal
 								x.push(i);
 								y.push(j);
@@ -62,14 +71,15 @@
 						}
 					}
 				}
-				// check rows
-				var rows = [i1];
+				// check columns
+				var cols = [i1];
 				if (i1 != i2)
-					rows.push(i2);
-				for (var i in rows) {
+					cols.push(i2);
+				for (var k=0; k<cols.length; k++) {
+					var j = cols[k];
 					var chain = 1;
 					var last = null;
-					for (var j=Math.max(Math.min(j1-2, j2-2), 0); j<Math.min(Math.max(j1+3, j2+3), width); j++) {
+					for (var i=Math.max(Math.min(j1-2, j2-2), 0); i<Math.min(Math.max(j1+3, j2+3), width); i++) {
 						if (board[i][j] == last) {
 							chain++;
 							if (chain == 3) {
@@ -86,9 +96,14 @@
 				
 				// swap animation
 				busy = true;
+				swapBack = x.length;
 				swap1 = [j1, i1];
 				swap2 = [j2, i2];
-				setTimeout("busy = false;", swapDuration);
+				console.log(x.length);
+				if (x.length > 0)
+					setTimeout("busy = false;", swapDuration);
+				else
+					setTimeout("var temp = board["+i1+"]["+j1+"]; board["+i1+"]["+j1+"] = board["+i2+"]["+j2+"]; board["+i2+"]["+j2+"] = temp; busy = false;", swapDuration*2);
 				
 				// remove marked jewels
 				while (x.length > 0)
@@ -113,39 +128,57 @@
 				i = data[0];
 				j = data[1];
 				// the check for t doesn't make sense
-				if (t < 1000000) {
+				if (t > .1) {
 					if (swap1 != null && i == swap1[0] && j == swap1[1]) {
 						if (swapTime == null)
 							swapTime = t;
 						
+						var mult = (t - swapTime)/swapDuration;
+						if (swapBack < 0)
+							mult = 1 - mult;
+						
 						// move to swap2 position
-						this.x = 32*(swap2[1] - j)*(t - swapTime)/swapDuration;
-						this.y = 32*(swap2[0] - i)*(t - swapTime)/swapDuration;
+						this.x = 32*(swap2[1] - j)*mult;
+						this.y = 32*(swap2[0] - i)*mult;
 						
 						if (t - swapTime > swapDuration) {
 							swapDone++;
 							if (swapDone >= 2) {
 								swapDone = 0;
 								swapTime = null;
-								swap1 = null;
-								swap2 = null;
+								if (swapBack == 0) {
+									swap1 = null;
+									swap2 = null;
+								} else {
+									console.log(1);
+									swapBack = -1;
+								}
 							}
 						}
 					} else if (swap2 != null && i == swap2[0] && j == swap2[1]) {
-					if (swapTime == null)
+						if (swapTime == null)
 							swapTime = t;
-					
+						
+						var mult = (t - swapTime)/swapDuration;
+						if (swapBack < 0)
+							mult = 1 - mult;
+						
 						// move to swap1 position
-						this.x = 32*(swap1[1] - j)*(t - swapTime)/swapDuration;
-						this.y = 32*(swap1[0] - i)*(t - swapTime)/swapDuration;
+						this.x = 32*(swap1[1] - j)*mult;
+						this.y = 32*(swap1[0] - i)*mult;
 					
 						if (t - swapTime > swapDuration) {
 							swapDone++;
 							if (swapDone >= 2) {
-							swapDone = 0;
+								swapDone = 0;
 								swapTime = null;
-								swap1 = null;
-								swap2 = null;
+								if (swapBack == 0) {
+									swap1 = null;
+									swap2 = null;
+								} else {
+									console.log(2);
+									swapBack = -1;
+								}
 							}
 						}
 					}
