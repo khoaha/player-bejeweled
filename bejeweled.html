@@ -41,9 +41,10 @@
 			
 			function check(i1, j1, i2, j2) {
 				// swap
-				var temp = board[i1][j1];
-				board[i1][j1] = board[i2][j2];
-				board[i2][j2] = temp;
+				var temp = board[j1][i1];
+				board[j1][i1] = board[j2][i2];
+				board[j2][i2] = temp;
+				console.log("items", i1, j1, i2, j2);
 				
 				var x = [];
 				var y = [];
@@ -56,9 +57,10 @@
 					var chain = 1;
 					var last = null;
 					for (var j=Math.max(Math.min(i1-2, i2-2), 0); j<Math.min(Math.max(i1+3, i2+3), height); j++) {
-						//console.log(i, j, chain, board[i][j], last);
+						console.log("i="+i, "j="+j, "chain="+chain, "item="+board[i][j], "last="+last);
 						if (board[i][j] == last) {
-							chain++;
+							chain += 1;
+							//console.log(chain, j, i);
 							if (chain == 3) {
 								console.log("row");
 								// mark i-2 through i for removal
@@ -81,7 +83,7 @@
 					var last = null;
 					for (var i=Math.max(Math.min(j1-2, j2-2), 0); i<Math.min(Math.max(j1+3, j2+3), width); i++) {
 						if (board[i][j] == last) {
-							chain++;
+							chain += 1;
 							if (chain == 3) {
 								// mark j-2 through j for removal
 								x.push(i);
@@ -108,7 +110,7 @@
 				// remove marked jewels
 				while (x.length > 0)
 					board[x.pop(), y.pop()] = null;
-				restock();
+				//restock();
 				
 				// TODO: redraw
 			}
@@ -146,7 +148,7 @@
 							if (swapDone >= 2) {
 								swapDone = 0;
 								swapTime = null;
-								if (swapBack == 0) {
+								if (swapBack != 0) {
 									swap1 = null;
 									swap2 = null;
 								} else {
@@ -172,7 +174,7 @@
 							if (swapDone >= 2) {
 								swapDone = 0;
 								swapTime = null;
-								if (swapBack == 0) {
+								if (swapBack != 0) {
 									swap1 = null;
 									swap2 = null;
 								} else {
@@ -204,6 +206,7 @@
 					icons[i] = new Array(width);
 					for (var j=0; j<width; j++)
 						board[i][j] = Math.floor(Math.random()*numShapes);
+					console.log(i, board[i]);
 				}
 					
                 // canvas1
