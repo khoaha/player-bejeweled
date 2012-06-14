@@ -57,13 +57,16 @@
 					var chain = 1;
 					var last = null;
 					for (var j=Math.max(Math.min(i1-2, i2-2), 0); j<Math.min(Math.max(i1+3, i2+3), height); j++) {
-						console.log("i="+i, "j="+j, "chain="+chain, "item="+board[i][j], "last="+last);
+						//console.log("i="+i, "j="+j, "chain="+chain, "item="+board[i][j], "last="+last);
 						if (board[i][j] == last) {
 							chain += 1;
-							//console.log(chain, j, i);
 							if (chain == 3) {
 								console.log("row");
-								// mark i-2 through i for removal
+								// mark j-2 through j for removal
+								x.push(i);
+								y.push(j-2);
+								x.push(i);
+								y.push(j-1);
 								x.push(i);
 								y.push(j);
 							}
@@ -85,7 +88,11 @@
 						if (board[i][j] == last) {
 							chain += 1;
 							if (chain == 3) {
-								// mark j-2 through j for removal
+								// mark i-2 through i for removal
+								x.push(i-2);
+								y.push(j);
+								x.push(i-1);
+								y.push(j);
 								x.push(i);
 								y.push(j);
 							}
@@ -105,12 +112,12 @@
 				if (x.length > 0)
 					setTimeout("busy = false;", swapDuration);
 				else
-					setTimeout("var temp = board["+i1+"]["+j1+"]; board["+i1+"]["+j1+"] = board["+i2+"]["+j2+"]; board["+i2+"]["+j2+"] = temp; busy = false;", swapDuration*2);
+					setTimeout("var temp = board["+j1+"]["+i1+"]; board["+j1+"]["+i1+"] = board["+j2+"]["+i2+"]; board["+j2+"]["+i2+"] = temp; busy = false;", swapDuration*2);
 				
 				// remove marked jewels
 				while (x.length > 0)
-					board[x.pop(), y.pop()] = null;
-				//restock();
+					board[x.pop()][y.pop()] = null;			
+				restock();
 				
 				// TODO: redraw
 			}
@@ -124,6 +131,7 @@
 							board[0][j] = Math.floor(Math.random()*numShapes);
 						}
 					}
+				printBoard();
 			}
 			
 			var jewelModifier = function(t, data) {
@@ -151,10 +159,8 @@
 								if (swapBack != 0) {
 									swap1 = null;
 									swap2 = null;
-								} else {
-									console.log(1);
+								} else
 									swapBack = -1;
-								}
 							}
 						}
 					} else if (swap2 != null && i == swap2[0] && j == swap2[1]) {
@@ -177,16 +183,19 @@
 								if (swapBack != 0) {
 									swap1 = null;
 									swap2 = null;
-								} else {
-									console.log(2);
+								} else
 									swapBack = -1;
-								}
 							}
 						}
 					}
 				}
 				return true;
 			};
+			
+			function printBoard() {
+				for (var i=0; i<height; i++)
+					console.log(i, board[i]);
+			}
 			
             function start() {
                 var b = Builder._$, B = Builder, C = anm.C;
@@ -206,8 +215,8 @@
 					icons[i] = new Array(width);
 					for (var j=0; j<width; j++)
 						board[i][j] = Math.floor(Math.random()*numShapes);
-					console.log(i, board[i]);
 				}
+				printBoard();
 					
                 // canvas1
                 var scene1 = b();
