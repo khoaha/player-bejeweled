@@ -11,6 +11,9 @@
 		<script type="text/javascript">
 			var b = Builder._$, B = Builder, C = anm.C;
 			
+			// canvas1
+            var scene1 = b();
+			
 			var width = 6; var height = 8;
 			var numShapes = 5;
 			var swapDuration = .5;
@@ -110,6 +113,22 @@
 				swapBack = x.length;
 				swap1 = [j1, i1];
 				swap2 = [j2, i2];
+				// check for swapping
+				for (var x=0; x<height; x++) {
+					for (var y=0; y<width; y++) {
+						if (swap1[0] == icons[x][y].data().i && swap1[1] == icons[x][y].data().j) {
+							icons[x][y].data().i = swap2[0];
+							icons[x][y].data().j = swap2[1];
+							swapped -= 1;
+							console.log("swapped 1 to", swap1);
+						} else if (swap2[0] == icons[x][y].data().i && swap2[1] == icons[x][y].data().j) {
+							icons[x][y].data().i = swap1[0];
+							icons[x][y].data().j = swap1[1];
+							swapped -= 1;
+							console.log("swapped 2 to", swap2);
+						}
+					}
+				}
 				console.log(x.length);
 				if (x.length > 0)
 					setTimeout("busy = false;", swapDuration);
@@ -119,7 +138,7 @@
 				// remove marked jewels
 				while (x.length > 0)
 					board[x.pop()][y.pop()] = null;			
-				restock();
+				//restock();
 				
 				// TODO: redraw
 			}
@@ -141,7 +160,13 @@
 				var j = b(this.$).data().j;
 				// the check for t doesn't make sense
 				if (t > .1) {
-					if (swap1 != null && i == swap1[0] && j == swap1[1]) {
+					if (board[i][j] == null) {
+						// shrink
+						if (this.sx <= 0)
+							scene1.remove(this.$);
+						this.sx -= .1;
+						this.sy -= .1;
+					} else if (swap1 != null && i == swap1[0] && j == swap1[1]) {
 						if (swapTime == null)
 							swapTime = t;
 						
@@ -176,6 +201,7 @@
 						// move to swap1 position
 						this.x = 32*(swap1[1] - j)*mult;
 						this.y = 32*(swap1[0] - i)*mult;
+						console.log("swap2 target", 32*(swap1[1] - j), 32*(swap1[1] - i));
 					
 						if (t - swapTime > swapDuration) {
 							swapDone++;
@@ -217,9 +243,6 @@
 						board[i][j] = Math.floor(Math.random()*numShapes);
 				}
 				printBoard();
-					
-                // canvas1
-                var scene1 = b();
 				
 				var area = b().rect([width*16, height*16], [width*32, height*32]).fill('#fff');
 				area.on(C.X_MCLICK, function(evt) { if (!busy) {
@@ -232,7 +255,7 @@
 				// draw from board
 				for (var i=0; i<height; i++)
 					for (var j=0; j<width; j++) {
-						scene1.add(icons[i][j] = b(shape[board[i][j]])
+						scene1.add(b(icons[i][j] = shape[board[i][j]])
 								.move([16 + 32*j, 16 + 32*i])
 								.xscale([0, .5], [0, 1])
 								.modify(jewelModifier).data({i: i, j: j}));
@@ -247,7 +270,7 @@
       </head>
 
 	<body onload="start();">
-		<h1>Bejewled - Animatron HTML5 Player Demo</h1>
+		<h1>Bejeweled - Animatron HTML5 Player Demo</h1>
 
 		<!-- canvas1 -->
 		<canvas id="canvas1"></canvas>
