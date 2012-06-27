@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Bejeweled - Animatron HTML5 Player Demo</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<script src="../player/vendor/matrix.js" type="text/javascript"></script>
+		<script src="../player/anm.player.js" type="text/javascript"></script>
+		<script src="../player/anm.builder.js" type="text/javascript"></script>
+		<script src="../player/animatron_import.js" type="text/javascript"></script>
+
+		<script type="text/javascript">
+			var b = Builder._$, B = Builder, C = anm.C;
+			
+			// canvas1
+            var scene1 = b();
+			
+			var width = 6; var height = 8;
+			var numShapes = 5;
+			var swapDuration = .5;
+			var board = new Array(height);
+			var icons = new Array(height);
+			
+			var busy = true;
+			
+			var selected = null;
+			
+			var swap1 = null;
+			var swap2 = null;
+			var swapTime = null;
+			var swapBack = 0;
+			var swapDone = 0;
+			
+			function swap(i, j) {
+				console.log("hit: "+i+", "+j);
+				if (!selected) {
+					selected = [i, j];
+				} else {
+					if ((Math.abs(selected[0] - i) == 1) != (Math.abs(selected[1] - j) == 1)) {
+						// swap
+						console.log("swapping: "+i+", "+j+" => "+selected);
+						check(i, j, selected[0], selected[1]);
+					}
+					selected = null;
+				}
+			}
+			
+			function check(i1, j1, i2, j2) {
+				// swap
+				var temp = board[j1][i1];
+				board[j1][i1] = board[j2][i2];
+				board[j2][i2] = temp;
+				console.log("items", i1, j1, i2, j2);
+				
+				var x = [];
+				var y = [];
+				// check rows
+				var rows = [j1];
+				if (j1 != j2)
+					rows.push(j2);
+				for (var k=0; k<rows.length; k++) {
+					var i = rows[k];
+					var chain = 1;
+					var last = null;
+					for (var j=Math.max(Math.min(i1-2, i2-2), 0); j<Math.min(Math.max(i1+3, i2+3), height); j++) {
+						//console.log("i="+i, "j="+j, "chain="+chain, "item="+board[i][j], "last="+last);
+						if (board[i][j] == last) {
+							chain += 1;
+							if (chain == 3) {
+								console.log("row");
+								// mark j-2 through j for removal
+								x.push(i);
+								y.push(j-2);
+								x.push(i);
+								y.push(j-1);
+								x.push(i);
+								y.push(j);
+							}
+						} else {
+							chain = 1;
+							last = board[i][j];
+						}
+					}
+				}
+				// check columns
+				var cols = [i1];
+				if (i1 != i2)
+					cols.push(i2);
+				for (var k=0; k<cols.length; k++) {
+					var j = cols[k];
+					var chain = 1;
+					var last = null;
+					for (var i=Math.max(Math.min(j1-2, j2-2), 0); i<Math.min(Math.max(j1+3, j2+3), width); i++) {
+						if (board[i][j] == last) {
+							chain += 1;
+							if (chain == 3) {
+								// mark i-2 through i for removal
+								x.push(i-2);
+								y.push(j);
+								x.push(i-1);
+								y.push(j);
+								x.push(i);
+								y.push(j);
+							}
+						} else {
+							chain = 1;
+							last = board[i][j];
+						}
+					}
+				}
+				
+				// swap animation
+				busy = true;
+				swapBack = x.length;
+				swap1 = [j1, i1];
+				swap2 = [j2, i2];
+				console.log(x.length);
+				if (x.length > 0) {
+					console.log("???", arrayAsString(x), arrayAsString(y));
+					setTimeout("busy = false; disappear("+arrayAsString(x)+", "+arrayAsString(y)+");", swapDuration*1000);
+				} else
+					setTimeout("var temp = board["+j1+"]["+i1+"]; board["+j1+"]["+i1+"] = board["+j2+"]["+i2+"]; board["+j2+"]["+i2+"] = temp; busy = false;", swapDuration*2000);
+				
+				// TODO: redraw
+			}
+			
+			function arrayAsString(a) {
+				return "["+a.join()+"]";
+			}
+			
+			function disappear(x, y) {
+				//swap values
+				for (var ax=0; ax<height; ax++) {
+					for (var ay=0; ay<width; ay++) {
+						if (swap1[0] == icons[ax][ay].data().i && swap1[1] == icons[ax][ay].data().j) {
+							icons[ax][ay].data({i: swap2[0], j: swap2[1]});
+							console.log("swapped 1 to", swap1, icons[ax][ay].data());
+						} else if (swap2[0] == icons[ax][ay].data().i && swap2[1] == icons[ax][ay].data().j) {
+							icons[ax][ay].data({i: swap1[0], j: swap1[1]});
+							console.log("swapped 2 to", swap2, icons[ax][ay].data());
+						}
+					}
+				}
+				
+				console.log("!!!", x, y);
+				
+				// remove marked jewels
+				while (x.length > 0)
+					board[x.pop()][y.pop()] = null;			
+				//restock();
+			}
+			
+			function restock() {
+				for (var j=0; j<width; j++)
+					for (var i=0; i<height; i++) {
+						if (board[i][j] == null) {
+							for (var k=i; k>0; k--)
+								board[k][j] = board[k-1][j];
+							board[0][j] = Math.floor(Math.random()*numShapes);
+						}
+					}
+				printBoard();
+			}
+			
+			var jewelModifier = function(t) {
+				var i = b(this.$).data().i;
+				var j = b(this.$).data().j;
+				// the check for t doesn't make sense
+				if (t > .1) {
+					if (board[i][j] == null) {
+						// shrink
+						if (this.sx <= 0)
+							scene1.remove(this.$);
+						this.sx -= .1;
+						this.sy -= .1;
+					} else if (swap1 != null && i == swap1[0] && j == swap1[1]) {
+						if (swapTime == null)
+							swapTime = t;
+						
+						var mult = (t - swapTime)/swapDuration;
+						if (swapBack < 0)
+							mult = 1 - mult;
+						
+						// move to swap2 position
+						this.x = 32*(swap2[1] - j)*mult;
+						this.y = 32*(swap2[0] - i)*mult;
+						
+						if (t - swapTime > swapDuration) {
+							swapDone++;
+							if (swapDone >= 2) {
+								swapDone = 0;
+								swapTime = null;
+								if (swapBack != 0) {
+									swap1 = null;
+									swap2 = null;
+								} else
+									swapBack = -1;
+							}
+						}
+					} else if (swap2 != null && i == swap2[0] && j == swap2[1]) {
+						if (swapTime == null)
+							swapTime = t;
+						
+						var mult = (t - swapTime)/swapDuration;
+						if (swapBack < 0)
+							mult = 1 - mult;
+						
+						// move to swap1 position
+						this.x = 32*(swap1[1] - j)*mult;
+						this.y = 32*(swap1[0] - i)*mult;
+					
+						if (t - swapTime > swapDuration) {
+							swapDone++;
+							if (swapDone >= 2) {
+								swapDone = 0;
+								swapTime = null;
+								if (swapBack != 0) {
+									swap1 = null;
+									swap2 = null;
+								} else
+									swapBack = -1;
+							}
+						}
+					}
+				}
+				return true;
+			};
+			
+			function printBoard() {
+				for (var i=0; i<height; i++)
+					console.log(i, board[i]);
+			}
+			
+            function start() {
+           		// 24x24
+          		var octagon = b().path([ [-4, -12], [-12, -4], [-12, 4], [-4, 12], [4, 12], [12, 4], [12, -4], [4, -12], [-4, -12] ]).fill('#aaa');
+				var diamond = b().path([ [0, -12], [-12, 0], [0, 12], [12, 0], [0, -12] ]).fill('#cc0');
+				var triangle = b().path([ [-12, 12], [0, -12], [12, 12], [-12, 12] ]).fill('#c0a');
+				var square = b().rect([0, 0], [24, 24]).fill('#c00');
+				var hexagon = b().path([ [0, -12], [-12, -6], [-12, 6], [0, 12], [12, 6], [12, -6], [0, -12] ]).fill('#fa0');
+				
+				var shape = [octagon, diamond, triangle, square, hexagon];
+    			
+				// init board
+				for (var i=0; i<height; i++) {
+					board[i] = new Array(width);
+					icons[i] = new Array(width);
+					for (var j=0; j<width; j++)
+						board[i][j] = Math.floor(Math.random()*numShapes);
+				}
+				printBoard();
+				
+				var area = b().rect([width*16, height*16], [width*32, height*32]).fill('#fff');
+				area.on(C.X_MCLICK, function(evt) { if (!busy) {
+					swap(Math.floor(evt.pos[0]/32),
+						Math.floor(evt.pos[1]/32));
+					}
+					return true;
+				});
+				scene1.add(area);
+				// draw from board
+				for (var i=0; i<height; i++)
+					for (var j=0; j<width; j++) {
+						icons[i][j] = b(shape[board[i][j]])
+								.move([16 + 32*j, 16 + 32*i])
+								.xscale([0, .5], [0, 1])
+								.modify(jewelModifier).data({i: i, j: j});
+						scene1.add(icons[i][j]);
+					}
+				
+				setTimeout("busy = false;", 500);
+				
+                createPlayer('canvas1', {'mode': C.M_DYNAMIC}).load(scene1).play();
+    
+            }
+        </script>
+      </head>
+
+	<body onload="start();">
+		<h1>Bejeweled - Animatron HTML5 Player Demo</h1>
+
+		<!-- canvas1 -->
+		<canvas id="canvas1"></canvas>
+
+	</body>
+
+</html>
