@@ -10,35 +10,56 @@
 		<script src="../player/animatron_import.js" type="text/javascript"></script>
 
 		<script type="text/javascript">
-			var b = Builder._$, B = Builder, C = anm.C;
-			
-			// canvas1
-            var scene1 = b();
-			
-			var width = 6; var height = 8;
-			var mode = "grow";
-			var numShapes = 5;
-			var swapDuration = .5;
-			var board = new Array(height);
-			
-			var swap1 = null;
-			var swap2 = null;
-			
-			function swap(i, j) {
-				console.log("hit: "+i+", "+j);
-				if (swap1 == null)
-					swap1 = [i, j];
-				else {
-					swap2 = [i, j];
-					console.log("swapping: "+swap1+", "+swap2);
-					mode = "swap";
-				}
-			}
-			
-			var gameLoop = function(t) {
-			}
-			
 			function start() {
+				var b = Builder._$, B = Builder, C = anm.C;
+				
+				// canvas1
+        	    var scene1 = b();
+				
+				var width = 6; var height = 8;
+				var mode = "grow";
+				var modeTime = 0;
+				var numShapes = 5;
+				var swapDuration = .5;
+				var board = new Array(height);
+				var icons = new Array(height);
+			
+				var swap1 = null;
+				var swap2 = null;
+				
+				var swap = function(i, j) {
+					if (mode == "wait") {
+						console.log("hit: "+i+", "+j);
+						if (swap1 == null)
+							swap1 = [i, j];
+						else {
+							swap2 = [i, j];
+							console.log("swapping: "+swap1+", "+swap2);
+							mode = "swap";
+							modeTime = -1;
+						}
+					}
+				}
+				
+				var gameLoop = function(t) {
+					if (modeTime = -1)
+						modeTime = t;
+						
+					if (mode == "swap") {
+						var i1 = icons[swap1[0]][swap1[1]];
+							var i2 = icons[swap2[0]][swap2[1]];
+						if (t < 3)
+						console.log(i2.v);
+						i1.v.state.x = (i2.v.state.x - i1.v.state.x)*(t - modeTime)/swapDuration;
+						i1.v.state.y = (i2.v.state.y - i1.v.state.y)*(t - modeTime)/swapDuration;
+						i2.v.state.x = (i1.v.state.x - i2.v.state.x)*(t - modeTime)/swapDuration;
+						i2.v.state.y = (i1.v.state.y - i2.v.state.y)*(t - modeTime)/swapDuration;
+						if (t - modeTime >= swapDuration) {
+							mode = "wait";
+						}
+					}
+				}
+			
            		// 24x24
           		var octagon = b().path([ [-4, -12], [-12, -4], [-12, 4], [-4, 12], [4, 12], [12, 4], [12, -4], [4, -12], [-4, -12] ]).fill('#aaa');
 				var diamond = b().path([ [0, -12], [-12, 0], [0, 12], [12, 0], [0, -12] ]).fill('#cc0');
@@ -51,6 +72,7 @@
 				// init board
 				for (var i=0; i<height; i++) {
 					board[i] = new Array(width);
+					icons[i] = new Array(width);
 					for (var j=0; j<width; j++)
 						board[i][j] = Math.floor(Math.random()*numShapes);
 				}
@@ -61,7 +83,7 @@
 				// draw from board
 				for (var i=0; i<height; i++)
 					for (var j=0; j<width; j++) {
-						scene1.add(b(shape[board[i][j]])
+						icons[i][j] = b(shape[board[i][j]])
 							.move([16 + 32*j, 16 + 32*i])
 							.xscale([0, .5], [0, 1])
 							.on(C.X_MCLICK, function(x, y) {
@@ -69,8 +91,11 @@
 										if (this.$.contains(evt.pos))
 											swap(x, y); 
 									}
-								}(i, j))
-							);
+								}(i, j));
+						icons[i][j].v.state.x = 16 + 32*j;
+						icons[i][j].v.state.y = 16 + 32*i;
+						console.log(i, j, icons[i][j].v);
+						scene1.add(icons[i][j]);
 					}
 				
 				setTimeout("mode = 'wait';", 500);
