@@ -10,54 +10,123 @@
 		<script src="../player/animatron_import.js" type="text/javascript"></script>
 
 		<script type="text/javascript">
+			var width = 6; var height = 8;
+			var mode = "grow";
+			var modeTime = 0;
+			var numShapes = 5;
+			var swapDuration = .5;
+			var board = new Array(height);
+			var icons = new Array(height);
+		
+			var swap1 = null;
+			var swap2 = null;
+			
 			function start() {
 				var b = Builder._$, B = Builder, C = anm.C;
 				
 				// canvas1
         	    var scene1 = b();
 				
-				var width = 6; var height = 8;
-				var mode = "grow";
-				var modeTime = 0;
-				var numShapes = 5;
-				var swapDuration = .5;
-				var board = new Array(height);
-				var icons = new Array(height);
-			
-				var swap1 = null;
-				var swap2 = null;
-				
 				var swap = function(i, j) {
+					console.log(mode);
 					if (mode == "wait") {
 						console.log("hit: "+i+", "+j);
 						if (swap1 == null)
 							swap1 = [i, j];
 						else {
-							swap2 = [i, j];
-							console.log("swapping: "+swap1+", "+swap2);
-							mode = "swap";
-							modeTime = -1;
+							if (Math.abs(swap1[0]-i+swap1[1]-j) == 1) {
+								swap2 = [i, j];
+								console.log("swapping: "+swap1+", "+swap2);
+								mode = "swap";
+								modeTime = -1;
+							} else {
+								swap1 = null;
+								mode = "wait";
+							}
 						}
 					}
 				}
 				
+				var checkRemove = function() {
+					var remove = [];
+					var last = null;
+					var combo = 0;
+					
+					// check rows
+					var start = Math.max(Math.min(swap1[1], swap2[1])-2, 0);
+					var end = Math.min(Math.max(swap1[1], swap2[1])+2, width-1);
+					for (var row=Math.min(swap1[0], swap2[0]); row<=Math.max(swap1[0], swap2[0]); row++) {
+						//console.log("row", row, board[row], Math.max(Math.min(swap1[1], swap2[1])-2, 0), end);
+						for (var col=start; col<=end; col++) {
+							//console.log(row, col, board[row][col], last, combo);
+							if (board[row][col] == last) {
+								combo++;
+								//console.log("combo", combo);
+							}
+							if (board[row][col] != last || col == end) {
+								if (combo >= 3)
+									while (combo > 0) {
+										remove.push([row, col-combo+1])
+										combo--;
+									}
+								else {
+									last = board[row][col];
+									combo = 1;
+								}
+							}
+						}
+					}
+					
+					// check cols
+					var start = Math.max(Math.min(swap1[0], swap2[0])-2, 0);
+					var end = Math.min(Math.max(swap1[0], swap2[0])+2, height-1);
+					for (var col=Math.min(swap1[1], swap2[1]); col<=Math.max(swap1[1], swap2[1]); col++) {
+						for (var row=start; row<=end; row++) {
+							if (board[row][col] == last)
+								combo++;
+							if (board[row][col] != last || col == end) {
+								if (combo >= 3)
+									while (combo > 0) {
+										remove.push([row, col-combo+1])
+										combo--;
+									}
+								else {
+									last = board[row][col];
+									combo = 1;
+								}
+							}
+						}
+					}
+					
+					return remove;
+				}
+				
 				var gameLoop = function(t) {
-					if (modeTime = -1)
+					if (modeTime == -1)
 						modeTime = t;
 						
 					if (mode == "swap") {
 						var i1 = icons[swap1[0]][swap1[1]];
-							var i2 = icons[swap2[0]][swap2[1]];
-						if (t < 3)
-						console.log(i2.v);
-						i1.v.state.x = (i2.v.state.x - i1.v.state.x)*(t - modeTime)/swapDuration;
-						i1.v.state.y = (i2.v.state.y - i1.v.state.y)*(t - modeTime)/swapDuration;
-						i2.v.state.x = (i1.v.state.x - i2.v.state.x)*(t - modeTime)/swapDuration;
-						i2.v.state.y = (i1.v.state.y - i2.v.state.y)*(t - modeTime)/swapDuration;
+						var i2 = icons[swap2[0]][swap2[1]];
+						i1.data({'targetX': 16+32*swap1[1] + 32*(swap2[1] - swap1[1])*(t - modeTime)/swapDuration,
+								'targetY': 16+32*swap1[0] + 32*(swap2[0] - swap1[0])*(t - modeTime)/swapDuration});
+						i2.data({'targetX': 16+32*swap2[1] + 32*(swap1[1] - swap2[1])*(t - modeTime)/swapDuration,
+								'targetY': 16+32*swap2[0] + 32*(swap1[0] - swap2[0])*(t - modeTime)/swapDuration});
 						if (t - modeTime >= swapDuration) {
+							// swap on board
+							var temp = board[swap1[0]][swap1[1]];
+							board[swap1[0]][swap1[1]] = board[swap2[0]][swap2[1]];
+							board[swap2[0]][swap2[1]] = temp;
+							console.log(checkRemove());
 							mode = "wait";
+							swap1 = null;
 						}
 					}
+				}
+				
+				var jewelModifier = function(t) {
+					this.x = b(this.$).data().targetX;
+					this.y = b(this.$).data().targetY;
 				}
 			
            		// 24x24
@@ -84,17 +153,15 @@
 				for (var i=0; i<height; i++)
 					for (var j=0; j<width; j++) {
 						icons[i][j] = b(shape[board[i][j]])
-							.move([16 + 32*j, 16 + 32*i])
 							.xscale([0, .5], [0, 1])
 							.on(C.X_MCLICK, function(x, y) {
 									return function(evt) {
 										if (this.$.contains(evt.pos))
 											swap(x, y); 
 									}
-								}(i, j));
-						icons[i][j].v.state.x = 16 + 32*j;
-						icons[i][j].v.state.y = 16 + 32*i;
-						console.log(i, j, icons[i][j].v);
+								}(i, j))
+							.modify(jewelModifier)
+							.data({'targetX': 16 + 32*j, 'targetY': 16 + 32*i});
 						scene1.add(icons[i][j]);
 					}
 				
