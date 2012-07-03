@@ -16,6 +16,7 @@
 			var numShapes = 5;
 			var swapDuration = .5;
 			var shrinkDuration = .5;
+			var fallDuration = .5;
 			var board = new Array(height);
 			var icons = new Array(height);
 		
@@ -23,6 +24,8 @@
 			var swap2 = null;
 			var autoSwap = false;
 			var remove = [];
+			var fallTo = new Array(width);
+			var fallNum = new Array(width);
 			
 			function start() {
 				var b = Builder._$, B = Builder, C = anm.C;
@@ -143,8 +146,30 @@
 					} else if (mode == "shrink") {
 						for (var i=0; i<remove.length; i++)
 							icons[remove[i][0]][remove[i][1]].data({'targetScale': 1 - (t - modeTime)/swapDuration});
-						if (t - modeTime >= swapDuration)
+						if (t - modeTime >= swapDuration) {
+							mode = "fall";
+							modeTime = t;
+							for (var i=0; i<width; i++) {
+								fallTo[i] = 0;
+								fallNum[i] = 0;
+							}
+							for (var i=0; i<remove.length; i++) {
+								a = remove[i];
+								if (a[0] > fallTo[a[1]])
+									fallTo[a[1]] = a[0];
+								fallNum[a[1]]++;
+							}
+						}
+					} else if (mode == "fall") {
+						for (var j=0; j<width; j++) {
+							for (var i=0; i<fallTo[j]; i++) {
+								icons[i][j].data({'targetY': 16+32*i + 32*fallNum[j]*(t - modeTime)/fallDuration});
+							}
+						}
+						if (t - modeTime >= fallDuration) {
+							// TODO: shift
 							mode = "wait";
+						}
 					}
 				}
 				
