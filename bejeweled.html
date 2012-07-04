@@ -33,6 +33,20 @@
 				// canvas1
         	    var scene1 = b();
 				
+				var addIcon = function(i, j) {
+					icons[i][j] = b(shape[board[i][j]])
+							.xscale([0, .5], [0, 1])
+							.on(C.X_MCLICK, function(x, y) {
+									return function(evt) {
+										if (this.$.contains(evt.pos))
+											swap(x, y); 
+									}
+								}(i, j))
+							.modify(jewelModifier)
+							.data({'targetX': 16 + 32*j, 'targetY': 16 + 32*i});
+					scene1.add(icons[i][j]);
+				}
+				
 				var swap = function(i, j) {
 					console.log(mode);
 					if (mode == "wait") {
@@ -159,15 +173,33 @@
 									fallTo[a[1]] = a[0];
 								fallNum[a[1]]++;
 							}
+							
+							// remove icons
+							for (var i=0; i<remove.length; i++)
+								scene1.remove(icons[remove[i][0]][remove[i][1]]);
+							
+							// change board
+							for (var j=0; j<width; j++) {
+								for (var i=fallTo[j]; i>=fallNum[j]; i--) {
+									board[i][j] = board[i-fallNum[j]][j];
+									icons[i][j] = icons[i-fallNum[j]][j];
+								}
+								for (var i=0; i<fallNum[j]; i++) {
+									board[i][j] = Math.floor(Math.random()*numShapes);
+									addIcon(i, j);
+								}
+							}
 						}
 					} else if (mode == "fall") {
+						//console.log(fallTo, fallNum);
 						for (var j=0; j<width; j++) {
-							for (var i=0; i<fallTo[j]; i++) {
-								icons[i][j].data({'targetY': 16+32*i + 32*fallNum[j]*(t - modeTime)/fallDuration});
+							for (var i=0; i<=fallTo[j]; i++) {
+								icons[i][j].data({'targetX': 16 + 32*j,
+												'targetY': 16+32*(i-fallNum[j]) + 32*fallNum[j]*(t - modeTime)/fallDuration});
 							}
 						}
 						if (t - modeTime >= fallDuration) {
-							// TODO: shift
+							// TODO: examine board?
 							mode = "wait";
 						}
 					}
@@ -206,19 +238,8 @@
 				scene1.add(area);
 				// draw from board
 				for (var i=0; i<height; i++)
-					for (var j=0; j<width; j++) {
-						icons[i][j] = b(shape[board[i][j]])
-							.xscale([0, .5], [0, 1])
-							.on(C.X_MCLICK, function(x, y) {
-									return function(evt) {
-										if (this.$.contains(evt.pos))
-											swap(x, y); 
-									}
-								}(i, j))
-							.modify(jewelModifier)
-							.data({'targetX': 16 + 32*j, 'targetY': 16 + 32*i});
-						scene1.add(icons[i][j]);
-					}
+					for (var j=0; j<width; j++)
+						addIcon(i, j);
 				
 				setTimeout("mode = 'wait';", 500);
 				
