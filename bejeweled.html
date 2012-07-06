@@ -33,21 +33,17 @@
 				// canvas1
         	    var scene1 = b();
 				
-				var setIconListener = function (i, j) {
-					icons[i][j].on(C.X_MCLICK, function(x, y) {
-									return function(evt) {
-										if (this.$.contains(evt.pos))
-											swap(x, y); 
-									}
-								}(i, j));
-				}
-				
 				var addIcon = function(i, j) {
 					icons[i][j] = b(shape[board[i][j]])
 							.xscale([0, .5], [0, 1])
 							.modify(jewelModifier)
-							.data({'targetX': 16 + 32*j, 'targetY': 16 + 32*i});
-					setIconListener(i, j);
+							.data({'i': i, 'j': j, 'targetX': 16 + 32*j, 'targetY': 16 + 32*i})
+							.on(C.X_MCLICK, function(evt) {
+									if (this.$.contains(evt.pos)) {
+										var data = this.$.data();
+										swap(data.i, data.j); 
+									}
+								});
 					scene1.add(icons[i][j]);
 				}
 				
@@ -136,9 +132,11 @@
 					if (mode == "swap") {
 						var i1 = icons[swap1[0]][swap1[1]];
 						var i2 = icons[swap2[0]][swap2[1]];
-						i1.data({'targetX': 16+32*swap1[1] + 32*(swap2[1] - swap1[1])*(t - modeTime)/swapDuration,
+						i1.data({'i': i1.data().i, 'j': i1.data().j,
+								'targetX': 16+32*swap1[1] + 32*(swap2[1] - swap1[1])*(t - modeTime)/swapDuration,
 								'targetY': 16+32*swap1[0] + 32*(swap2[0] - swap1[0])*(t - modeTime)/swapDuration});
-						i2.data({'targetX': 16+32*swap2[1] + 32*(swap1[1] - swap2[1])*(t - modeTime)/swapDuration,
+						i2.data({'i': i2.data().i, 'j': i2.data().j,
+								'targetX': 16+32*swap2[1] + 32*(swap1[1] - swap2[1])*(t - modeTime)/swapDuration,
 								'targetY': 16+32*swap2[0] + 32*(swap1[0] - swap2[0])*(t - modeTime)/swapDuration});
 						if (t - modeTime >= swapDuration) {
 							// swap on board
@@ -148,6 +146,8 @@
 							temp = icons[swap1[0]][swap1[1]];
 							icons[swap1[0]][swap1[1]] = icons[swap2[0]][swap2[1]];
 							icons[swap2[0]][swap2[1]] = temp;
+							icons[swap1[0]][swap1[1]].data({'i': swap2[0], 'j': swap2[1]});
+							icons[swap2[0]][swap2[1]].data({'i': swap1[0], 'j': swap1[1]});
 							remove = checkRemove();
 							console.log("remove:", remove);
 							if (remove.length == 0 && !autoSwap) {
@@ -188,8 +188,8 @@
 									board[i][j] = board[i-fallNum[j]][j];
 									icons[i][j] = icons[i-fallNum[j]][j];
 									
-									// update listener
-									setIconListener(i, j);
+									// update reference
+									icons[i][j].data({'i': i, 'j': j});
 								}
 								for (var i=0; i<fallNum[j]; i++) {
 									board[i][j] = Math.floor(Math.random()*numShapes);
@@ -201,7 +201,7 @@
 						//console.log(fallTo, fallNum);
 						for (var j=0; j<width; j++) {
 							for (var i=0; i<=fallTo[j]; i++) {
-								icons[i][j].data({'targetX': 16 + 32*j,
+								icons[i][j].data({'i': icons[i][j].data().i, 'j': icons[i][j].data().j, 'targetX': 16 + 32*j,
 												'targetY': 16+32*(i-fallNum[j]) + 32*fallNum[j]*(t - modeTime)/fallDuration});
 							}
 						}
