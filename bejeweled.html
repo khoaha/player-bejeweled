@@ -51,9 +51,11 @@
 					console.log(mode);
 					if (mode == "wait") {
 						console.log("hit: "+i+", "+j);
-						if (swap1 == null)
+						if (swap1 == null) {
 							swap1 = [i, j];
-						else {
+							icons[i][j].stroke('#06f', 2);
+						} else {
+							icons[swap1[0]][swap1[1]].stroke('#000', 1);
 							if (Math.abs(swap1[0]-i+swap1[1]-j) == 1) {
 								swap2 = [i, j];
 								console.log("swapping: "+swap1+", "+swap2);
@@ -86,7 +88,7 @@
 							if (board[row][col] != last || col == end) {
 								if (combo >= 3)
 									while (combo > 0) {
-										remove.push([row, col-combo+1])
+										remove.push([row, col-combo+(col==end && board[row][col] == last ? 1 : 0)])
 										combo--;
 									}
 								else {
@@ -111,7 +113,7 @@
 							if (board[row][col] != last || row == end) {
 								if (combo >= 3)
 									while (combo > 0) {
-										remove.push([row-combo+1, col])
+										remove.push([row-combo+(row==end && board[row][col] == last ? 1 : 0), col])
 										combo--;
 									}
 								else {
@@ -146,8 +148,8 @@
 							temp = icons[swap1[0]][swap1[1]];
 							icons[swap1[0]][swap1[1]] = icons[swap2[0]][swap2[1]];
 							icons[swap2[0]][swap2[1]] = temp;
-							icons[swap1[0]][swap1[1]].data({'i': swap2[0], 'j': swap2[1]});
-							icons[swap2[0]][swap2[1]].data({'i': swap1[0], 'j': swap1[1]});
+							icons[swap1[0]][swap1[1]].data({'i': swap1[0], 'j': swap1[1]});
+							icons[swap2[0]][swap2[1]].data({'i': swap2[0], 'j': swap2[1]});
 							remove = checkRemove();
 							console.log("remove:", remove);
 							if (remove.length == 0 && !autoSwap) {
@@ -207,6 +209,7 @@
 						}
 						if (t - modeTime >= fallDuration) {
 							// TODO: examine board?
+							console.log("----------");
 							for (var i=0; i<height; i++)
 								console.log(board[i]);
 							mode = "wait";
