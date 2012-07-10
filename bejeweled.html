@@ -27,6 +27,9 @@
 			var fallTo = new Array(width);
 			var fallNum = new Array(width);
 			
+			var time = 0;
+			var score = 100;
+			
 			function start() {
 				var b = Builder._$, B = Builder, C = anm.C;
 				
@@ -164,8 +167,10 @@
 							}
 						}
 					} else if (mode == "shrink") {
-						for (var i=0; i<remove.length; i++)
-							icons[remove[i][0]][remove[i][1]].data({'targetScale': 1 - (t - modeTime)/swapDuration});
+						for (var i=0; i<remove.length; i++) {
+							if (remove[i][0] >= 0 && remove[i][1] >= 0)
+								icons[remove[i][0]][remove[i][1]].data({'targetScale': 1 - (t - modeTime)/swapDuration});
+						}
 						if (t - modeTime >= swapDuration) {
 							mode = "fall";
 							modeTime = t;
@@ -182,7 +187,10 @@
 							
 							// remove icons
 							for (var i=0; i<remove.length; i++)
-								scene1.remove(icons[remove[i][0]][remove[i][1]]);
+								if (remove[i][0] >= 0 && remove[i][1] >= 0) {
+									score++;
+									scene1.remove(icons[remove[i][0]][remove[i][1]]);
+								}
 							
 							// change board
 							for (var j=0; j<width; j++) {
@@ -208,13 +216,14 @@
 							}
 						}
 						if (t - modeTime >= fallDuration) {
-							// TODO: examine board?
-							console.log("----------");
 							for (var i=0; i<height; i++)
 								console.log(board[i]);
 							mode = "wait";
 						}
 					}
+					
+					// set time
+					time = t;
 				}
 				
 				var jewelModifier = function(t) {
@@ -252,6 +261,28 @@
 				for (var i=0; i<height; i++)
 					for (var j=0; j<width; j++)
 						addIcon(i, j);
+				
+				var scoreBox = b().rect([32*width+64, 0], [128, 32]).fill('#fff');
+				var scoreFill = b().rect([32*width, 0], [128, 32]).fill('#0cf').nostroke().reg([-64, 0]).modify(function(t) {
+   									this.sx = (score-time/2)/200;
+								});
+				var perDisp = b().paint(function(ctx) {
+      							ctx.font = '14pt sans-serif';
+      							ctx.fillText(Math.ceil((score-time/2)/2)+'%', 32*width+8, 16);
+    						});
+				var scoreDisp = b().paint(function(ctx) {
+      						ctx.font = '14pt sans-serif';
+      						ctx.fillText('Gems: '+(score-100), 32*width+8, 48);
+    						});
+				var timeDisp = b().paint(function(ctx) {
+      						ctx.font = '14pt sans-serif';
+      						ctx.fillText('Time: '+Math.floor(time)+' s', 32*width+8, 72);
+    						});
+				scene1.add(scoreBox);
+				scene1.add(scoreFill);
+				scene1.add(perDisp);
+				scene1.add(scoreDisp);
+				scene1.add(timeDisp);
 				
 				setTimeout("mode = 'wait';", 500);
 				
