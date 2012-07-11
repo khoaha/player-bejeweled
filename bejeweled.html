@@ -72,6 +72,85 @@
 					}
 				}
 				
+				var clearBoard = function() {
+					var results = [];
+					
+					// check rows
+					for (var i=0; i<height; i++) {
+						var combo = 1;
+						var last = board[i][0];
+						for (var j=1; j<width; j++) {
+							if (board[i][j] == last) {
+								combo++;
+								if (j == width-1 && combo >= 3) {
+									while (combo > 0) {
+										results.push([i, j-combo+1]);
+										combo--;
+									}
+								}
+							} else {
+								if (combo >= 3) {
+									while (combo > 0) {
+										results.push([i, j-combo]);
+										combo--;
+									}
+								}
+								combo = 1;
+								last = board[i][j];
+							}
+						}
+					}
+					
+					// check cols
+					for (var j=0; j<width; j++) {
+						var combo = 1;
+						var last = board[0][j];
+						for (var i=1; i<height; i++) {
+							if (board[i][j] == last) {
+								combo++;
+								if (i == height-1 && combo >= 3) {
+									while (combo > 0) {
+										results.push([i-combo+1, j]);
+										combo--;
+									}
+								}
+							} else {
+								if (combo >= 3) {
+									while (combo > 0) {
+										results.push([i-combo, j]);
+										combo--;
+									}
+								}
+								combo = 1;
+								last = board[i][j];
+							}
+						}
+					}
+					
+					return results;
+				}
+				
+				var checkBoard = function() {
+					for (var i=1; i<height; i++) {
+						for (var j=1; j<width; j++) {
+							// swap up
+							var temp = board[i][j];
+							board[i][j] = board[i-1][j];
+							board[i-1][j] = temp;
+							if (clearBoard().length > 0)
+								return true;
+							// swap left
+							temp = board[i][j];
+							board[i][j] = board[i][j-1];
+							board[i][j-1] = board[i-1][j];
+							board[i-1][j] = temp;
+							if (clearBoard().length > 0)
+								return true;
+						}
+					}
+					return false;
+				}
+				
 				var checkRemove = function() {
 					var remove = [];
 					var last = null;
@@ -218,7 +297,14 @@
 						if (t - modeTime >= fallDuration) {
 							for (var i=0; i<height; i++)
 								console.log(board[i]);
-							mode = "wait";
+							// check new board
+							remove = clearBoard();
+							console.log("auto-remove:");
+							console.log(remove);
+							if (remove.length > 0)
+								mode = "shrink";
+							else
+								mode = "wait";
 						}
 					}
 					
