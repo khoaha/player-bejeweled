@@ -24,8 +24,7 @@
 			var swap2 = null;
 			var autoSwap = false;
 			var remove = [];
-			var fallTo = new Array(width);
-			var fallNum = new Array(width);
+			var fallRef = new Array(height);
 			
 			var time = 0;
 			var score = 100;
@@ -160,12 +159,9 @@
 					var start = Math.max(Math.min(swap1[1], swap2[1])-2, 0);
 					var end = Math.min(Math.max(swap1[1], swap2[1])+2, width-1);
 					for (var row=Math.min(swap1[0], swap2[0]); row<=Math.max(swap1[0], swap2[0]); row++) {
-						//console.log("row", row, board[row], Math.max(Math.min(swap1[1], swap2[1])-2, 0), end);
 						for (var col=start; col<=end; col++) {
-							//console.log(row, col, board[row][col], last, combo);
 							if (board[row][col] == last) {
 								combo++;
-								//console.log("combo", combo);
 							}
 							if (board[row][col] != last || col == end) {
 								if (combo >= 3)
@@ -253,16 +249,24 @@
 						if (t - modeTime >= swapDuration) {
 							mode = "fall";
 							modeTime = t;
-							for (var i=0; i<width; i++) {
-								fallTo[i] = 0;
-								fallNum[i] = 0;
+							// fill fallRef
+							for (var i=0; i<height; i++) {
+								fallRef[i] = new Array(width);
+								for (var j=0; j<width; j++)
+									fallRef[i][j] = 0;
 							}
-							for (var i=0; i<remove.length; i++) {
-								a = remove[i];
-								if (a[0] > fallTo[a[1]])
-									fallTo[a[1]] = a[0];
-								fallNum[a[1]]++;
+							console.log("fall reset");
+							for (var i=0; i<height; i++)
+								console.log(fallRef[i]);
+								
+							for (var n=0; n<remove.length; n++) {
+								for (var i=0; i<=remove[n][0]; i++)
+									fallRef[i][remove[n][1]]++;
 							}
+							
+							console.log("fall ref");
+							for (var i=0; i<height; i++)
+								console.log(fallRef[i]);
 							
 							// remove icons
 							for (var i=0; i<remove.length; i++)
@@ -271,27 +275,29 @@
 									scene1.remove(icons[remove[i][0]][remove[i][1]]);
 								}
 							
+							// TODO: recursive method for slot assignment?
+							
 							// change board
-							for (var j=0; j<width; j++) {
-								for (var i=fallTo[j]; i>=fallNum[j]; i--) {
-									board[i][j] = board[i-fallNum[j]][j];
-									icons[i][j] = icons[i-fallNum[j]][j];
-									
-									// update reference
-									icons[i][j].data({'i': i, 'j': j});
-								}
-								for (var i=0; i<fallNum[j]; i++) {
-									board[i][j] = Math.floor(Math.random()*numShapes);
-									addIcon(i, j);
+							for (var i=height-1; i>=0; i--) {
+								for (var j=0; j<width; j++) {
+									if (fallRef[i][j] != 0) {
+										if (i - fallRef[i][j] < 0) {
+											board[i][j] = Math.floor(Math.random()*numShapes);
+											addIcon(i, j);
+										} else {
+											board[i][j] = board[i-fallRef[i][j]][j];
+											icons[i][j] = icons[i-fallRef[i][j]][j];
+										}
+									}
 								}
 							}
 						}
 					} else if (mode == "fall") {
-						//console.log(fallTo, fallNum);
-						for (var j=0; j<width; j++) {
-							for (var i=0; i<=fallTo[j]; i++) {
-								icons[i][j].data({'i': icons[i][j].data().i, 'j': icons[i][j].data().j, 'targetX': 16 + 32*j,
-												'targetY': 16+32*(i-fallNum[j]) + 32*fallNum[j]*(t - modeTime)/fallDuration});
+						for (var i=0; i<height; i++) {
+							for (var j=0; j<width; j++) {
+								if (fallRef[i][j] > 0)
+									icons[i][j].data({'i': icons[i][j].data().i, 'j': icons[i][j].data().j, 'targetX': 16 + 32*j,
+													'targetY': 16+32*(i-fallRef[i][j]) + 32*fallRef[i][j]*(t - modeTime)/fallDuration});
 							}
 						}
 						if (t - modeTime >= fallDuration) {
