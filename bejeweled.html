@@ -28,12 +28,18 @@
 			
 			var time = 0;
 			var score = 100;
+			var level = 1;
 			
 			function start() {
 				var b = Builder._$, B = Builder, C = anm.C;
 				
 				// canvas1
         	    var scene1 = b();
+				
+				var msg = b().paint(function(ctx) {
+      							ctx.font = '24pt sans-serif';
+      							ctx.fillText('Game Over', 12, 140);
+    						});
 				
 				var addIcon = function(i, j) {
 					icons[i][j] = b(shape[board[i][j]])
@@ -74,32 +80,6 @@
 				var clearBoard = function() {
 					var results = [];
 					
-					// check rows
-					for (var i=height-1; i>=0; i--) {
-						var combo = 1;
-						var last = board[i][width-1];
-						for (var j=width-2; j>=0; j--) {
-							if (board[i][j] == last) {
-								combo++;
-								if (j == 0 && combo >= 3) {
-									while (combo > 0) {
-										results.push([i, j+combo-1]);
-										combo--;
-									}
-								}
-							} else {
-								if (combo >= 3) {
-									while (combo > 0) {
-										results.push([i, j+combo]);
-										combo--;
-									}
-								}
-								combo = 1;
-								last = board[i][j];
-							}
-						}
-					}
-					
 					// check cols
 					for (var j=width-1; j>=0; j--) {
 						var combo = 1;
@@ -117,6 +97,32 @@
 								if (combo >= 3) {
 									while (combo > 0) {
 										results.push([i+combo, j]);
+										combo--;
+									}
+								}
+								combo = 1;
+								last = board[i][j];
+							}
+						}
+					}
+					
+					// check rows
+					for (var i=height-1; i>=0; i--) {
+						var combo = 1;
+						var last = board[i][width-1];
+						for (var j=width-2; j>=0; j--) {
+							if (board[i][j] == last) {
+								combo++;
+								if (j == 0 && combo >= 3) {
+									while (combo > 0) {
+										results.push([i, j+combo-1]);
+										combo--;
+									}
+								}
+							} else {
+								if (combo >= 3) {
+									while (combo > 0) {
+										results.push([i, j+combo]);
 										combo--;
 									}
 								}
@@ -155,31 +161,6 @@
 					var last = null;
 					var combo = 0;
 					
-					// check rows
-					var start = Math.max(Math.min(swap1[1], swap2[1])-2, 0);
-					var end = Math.min(Math.max(swap1[1], swap2[1])+2, width-1);
-					for (var row=Math.max(swap1[0], swap2[0]); row>=Math.min(swap1[0], swap2[0]); row--) {
-						for (var col=start; col<=end; col++) {
-							if (board[row][col] == last) {
-								combo++;
-							}
-							if (board[row][col] != last || col == end) {
-								if (combo >= 3)
-									while (combo > 0) {
-										remove.push([row, col-combo+(col==end && board[row][col] == last ? 1 : 0)])
-										combo--;
-									}
-								else {
-									last = board[row][col];
-									combo = 1;
-								}
-							}
-						}
-					}
-					
-					last = null;
-					combo = 0;
-					
 					// check cols
 					var start = Math.max(Math.min(swap1[0], swap2[0])-2, 0);
 					var end = Math.min(Math.max(swap1[0], swap2[0])+2, height-1);
@@ -202,14 +183,57 @@
 						}
 					}
 					
+					last = null;
+					combo = 0;
+					
+					// check rows
+					var start = Math.max(Math.min(swap1[1], swap2[1])-2, 0);
+					var end = Math.min(Math.max(swap1[1], swap2[1])+2, width-1);
+					for (var row=Math.max(swap1[0], swap2[0]); row>=Math.min(swap1[0], swap2[0]); row--) {
+						for (var col=start; col<=end; col++) {
+							if (board[row][col] == last) {
+								combo++;
+							}
+							if (board[row][col] != last || col == end) {
+								if (combo >= 3)
+									while (combo > 0) {
+										remove.push([row, col-combo+(col==end && board[row][col] == last ? 1 : 0)])
+										combo--;
+									}
+								else {
+									last = board[row][col];
+									combo = 1;
+								}
+							}
+						}
+					}
+					
 					return remove;
 				}
 				
 				var gameLoop = function(t) {
 					if (modeTime == -1)
 						modeTime = t;
-						
-					if (mode == "swap") {
+					
+					// check score
+					if (Math.ceil((score-time/2)/2) >= 100) {
+						level++;
+						score = Math.floor(100 + time/2);
+					} else if (Math.ceil((score-time/2)/2) <= 0) {
+						mode = "over";
+						for (var i=0; i<height; i++)
+							for (var j=0; j<width; j++)
+								icons[i][j].disable();
+						msg.enable();
+					}
+					
+					if (mode == "start") {
+						remove = clearBoard();
+						if (remove.length > 0)
+							mode = "shrink";
+						else
+							mode = "wait";
+					} else if (mode == "swap") {
 						var i1 = icons[swap1[0]][swap1[1]];
 						var i2 = icons[swap2[0]][swap2[1]];
 						i1.data({'i': i1.data().i, 'j': i1.data().j,
@@ -266,6 +290,7 @@
 								var end = remove[n][0]+fallRef[remove[n][0]][remove[n][1]];
 								for (var i=0; i<=end; i++) {
 									//console.log(i, remove[n][0]+fallRef[remove[n][0]][remove[n][1]]);
+									// TODO: problem area?
 									fallRef[i][remove[n][1]]++;
 								}
 							}
@@ -350,6 +375,10 @@
 				var area = b().rect([width*16, height*16], [width*32, height*32]).fill('#fff')
 							.modify(gameLoop);
 				scene1.add(area);
+				
+				scene1.add(msg);
+				msg.disable();
+				
 				// draw from board
 				for (var i=0; i<height; i++)
 					for (var j=0; j<width; j++)
@@ -357,11 +386,11 @@
 				
 				var scoreBox = b().rect([32*width+64, 0], [128, 32]).fill('#fff');
 				var scoreFill = b().rect([32*width, 0], [128, 32]).fill('#0cf').nostroke().reg([-64, 0]).modify(function(t) {
-   									this.sx = (score-time/2)/200;
+   									this.sx = Math.max(0, Math.min((score-time/2)/200, 1));
 								});
 				var perDisp = b().paint(function(ctx) {
       							ctx.font = '14pt sans-serif';
-      							ctx.fillText(Math.ceil((score-time/2)/2)+'%', 32*width+8, 16);
+      							ctx.fillText(Math.max(0, Math.min(Math.ceil((score-time/2)/2), 100))+'%', 32*width+8, 16);
     						});
 				var scoreDisp = b().paint(function(ctx) {
       						ctx.font = '14pt sans-serif';
@@ -371,13 +400,18 @@
       						ctx.font = '14pt sans-serif';
       						ctx.fillText('Time: '+Math.floor(time)+' s', 32*width+8, 72);
     						});
+				var levelDisp = b().paint(function(ctx) {
+      						ctx.font = '14pt sans-serif';
+      						ctx.fillText('Level: '+level, 32*width+8, 96);
+    						});
 				scene1.add(scoreBox);
 				scene1.add(scoreFill);
 				scene1.add(perDisp);
 				scene1.add(scoreDisp);
 				scene1.add(timeDisp);
+				scene1.add(levelDisp);
 				
-				setTimeout("mode = 'wait';", 500);
+				setTimeout("mode = 'start';", 500);
 				
                 createPlayer('canvas1', {'mode': C.M_DYNAMIC}).load(scene1).play();
     
