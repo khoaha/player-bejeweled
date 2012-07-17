@@ -30,6 +30,35 @@
 			var score = 100;
 			var level = 1;
 			
+			function partition(array, begin, end, pivot) {
+				var piv = array[pivot][0];
+				var tmp = array[pivot];
+				array[pivot] = array[end-1];
+				array[end-1] = tmp;
+				var store = begin;
+				for (var ix=begin; ix<end-1; ++ix) {
+					if(array[ix][0] > piv) {
+						var tmp = array[store];
+						array[store] = array[ix];
+						array[ix] = tmp;
+						++store;
+					}
+				}
+				var tmp = array[end-1];
+				array[end-1] = array[store];
+				array[store] = tmp;
+				return store;
+			}
+			
+			function quicksort(array, begin, end) {
+				if (end-1 > begin) {
+					var pivot = begin+Math.floor(Math.random()*(end-begin));
+					pivot = partition(array, begin, end, pivot);
+					quicksort(array, begin, pivot);
+					quicksort(array, pivot+1, end);
+				}
+			}
+			
 			function start() {
 				var b = Builder._$, B = Builder, C = anm.C;
 				
@@ -132,6 +161,9 @@
 						}
 					}
 					
+					// sort results
+					quicksort(results, 0, results.length);
+					
 					return results;
 				}
 				
@@ -229,6 +261,7 @@
 					
 					if (mode == "start") {
 						remove = clearBoard();
+						console.log("first clear", remove);
 						if (remove.length > 0)
 							mode = "shrink";
 						else
@@ -290,7 +323,6 @@
 								var end = remove[n][0]+fallRef[remove[n][0]][remove[n][1]];
 								for (var i=0; i<=end; i++) {
 									//console.log(i, remove[n][0]+fallRef[remove[n][0]][remove[n][1]]);
-									// TODO: problem area?
 									fallRef[i][remove[n][1]]++;
 								}
 							}
@@ -299,7 +331,11 @@
 							for (var i=0; i<remove.length; i++)
 								if (remove[i][0] >= 0 && remove[i][1] >= 0) {
 									score++;
-									scene1.remove(icons[remove[i][0]][remove[i][1]]);
+									try {
+										scene1.remove(icons[remove[i][0]][remove[i][1]]);
+									} catch (err) {
+										console.log("No element found at ("+remove[i][0]+", "+remove[i][1]+")");
+									}
 								}
 							
 							// change board
