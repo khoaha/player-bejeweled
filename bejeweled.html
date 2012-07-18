@@ -31,13 +31,13 @@
 			var level = 1;
 			
 			function partition(array, begin, end, pivot) {
-				var piv = array[pivot][0];
+				var piv = array[pivot][0]*width + array[pivot][1];
 				var tmp = array[pivot];
 				array[pivot] = array[end-1];
 				array[end-1] = tmp;
 				var store = begin;
 				for (var ix=begin; ix<end-1; ++ix) {
-					if(array[ix][0] > piv) {
+					if(array[ix][0]*width + array[ix][1] > piv) {
 						var tmp = array[store];
 						array[store] = array[ix];
 						array[ix] = tmp;
@@ -57,6 +57,17 @@
 					quicksort(array, begin, pivot);
 					quicksort(array, pivot+1, end);
 				}
+			}
+			
+			function unique(array) {
+				if (array.length == 0)
+					return array;
+				var out = [array[0]];
+				for (var i=1; i<array.length; i++) {
+					if (array[i] != array[i-1])
+						out.push(array[i]);
+				}
+				return out;
 			}
 			
 			function start() {
@@ -82,6 +93,21 @@
 									}
 								});
 					scene1.add(icons[i][j]);
+				}
+				
+				var init = function() {
+					// init board
+					for (var i=0; i<height; i++) {
+						board[i] = new Array(width);
+						icons[i] = new Array(width);
+						for (var j=0; j<width; j++)
+							board[i][j] = Math.floor(Math.random()*numShapes);
+					}
+					
+					// draw from board
+					for (var i=0; i<height; i++)
+						for (var j=0; j<width; j++)
+							addIcon(i, j);
 				}
 				
 				var swap = function(i, j) {
@@ -164,7 +190,7 @@
 					// sort results
 					quicksort(results, 0, results.length);
 					
-					return results;
+					return unique(results);
 				}
 				
 				var checkBoard = function() {
@@ -204,7 +230,7 @@
 							if (board[row][col] != last || row == start) {
 								if (combo >= 3)
 									while (combo > 0) {
-										remove.push([row+combo-(row==start && board[row][col] == last ? 1 : 0), col])
+										remove.push([row+combo-((row==start && board[row][col] == last) ? 1 : 0), col]);
 										combo--;
 									}
 								else {
@@ -229,7 +255,7 @@
 							if (board[row][col] != last || col == end) {
 								if (combo >= 3)
 									while (combo > 0) {
-										remove.push([row, col-combo+(col==end && board[row][col] == last ? 1 : 0)])
+										remove.push([row, col-combo+((col==end && board[row][col] == last) ? 1 : 0)]);
 										combo--;
 									}
 								else {
@@ -286,6 +312,8 @@
 							icons[swap1[0]][swap1[1]].data({'i': swap1[0], 'j': swap1[1]});
 							icons[swap2[0]][swap2[1]].data({'i': swap2[0], 'j': swap2[1]});
 							remove = checkRemove();
+							quicksort(remove, 0, remove.length);
+							remove = unique(remove);
 							console.log("remove:", remove);
 							if (remove.length == 0 && !autoSwap) {
 								// swap back
@@ -312,17 +340,13 @@
 								for (var j=0; j<width; j++)
 									fallRef[i][j] = 0;
 							}
-							
-							console.log("fall ref");
-							for (var i=0; i<height; i++)
-								console.log(fallRef[i]);
-							console.log("--------");
 								
 							for (var n=0; n<remove.length; n++) {
 								//console.log(remove[n][0], remove[n][1], fallRef[remove[n][0]][remove[n][1]]);
 								var end = remove[n][0]+fallRef[remove[n][0]][remove[n][1]];
 								for (var i=0; i<=end; i++) {
 									//console.log(i, remove[n][0]+fallRef[remove[n][0]][remove[n][1]]);
+									// TODO: problem area?
 									fallRef[i][remove[n][1]]++;
 								}
 							}
@@ -377,7 +401,8 @@
 					}
 					
 					// set time
-					time = t;
+					if (mode != "over")
+						time = t;
 				}
 				
 				var jewelModifier = function(t) {
@@ -399,14 +424,6 @@
 				var hexagon = b().path([ [0, -12], [-12, -6], [-12, 6], [0, 12], [12, 6], [12, -6], [0, -12] ]).fill('#fa0');
 				
 				var shape = [octagon, diamond, triangle, square, hexagon];
-    			
-				// init board
-				for (var i=0; i<height; i++) {
-					board[i] = new Array(width);
-					icons[i] = new Array(width);
-					for (var j=0; j<width; j++)
-						board[i][j] = Math.floor(Math.random()*numShapes);
-				}
 				
 				var area = b().rect([width*16, height*16], [width*32, height*32]).fill('#fff')
 							.modify(gameLoop);
@@ -415,10 +432,7 @@
 				scene1.add(msg);
 				msg.disable();
 				
-				// draw from board
-				for (var i=0; i<height; i++)
-					for (var j=0; j<width; j++)
-						addIcon(i, j);
+				init();
 				
 				var scoreBox = b().rect([32*width+64, 0], [128, 32]).fill('#fff');
 				var scoreFill = b().rect([32*width, 0], [128, 32]).fill('#0cf').nostroke().reg([-64, 0]).modify(function(t) {
