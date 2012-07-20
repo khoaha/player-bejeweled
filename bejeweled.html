@@ -110,6 +110,18 @@
 							addIcon(i, j);
 				}
 				
+				var deleteBoard = function() {
+					for (var i=0; i<height; i++) {
+						for (var j=0; j<width; j++) {
+							try {
+								scene1.remove(icons[i][j]);
+							} catch (err) {
+								console.log("Error cleaning ("+i+", "+j+")");
+							}
+						}
+					}
+				}
+				
 				var swap = function(i, j) {
 					console.log(mode);
 					if (mode == "wait") {
@@ -277,11 +289,11 @@
 					if (Math.ceil((score-time/2)/2) >= 100) {
 						level++;
 						score = Math.floor(100 + time/2);
-					} else if (Math.ceil((score-time/2)/2) <= 0) {
+						deleteBoard();
+						init();
+					} else if (Math.ceil((score-time/2)/2) <= 0 && mode != "over") {
 						mode = "over";
-						for (var i=0; i<height; i++)
-							for (var j=0; j<width; j++)
-								icons[i][j].disable();
+						deleteBoard();
 						msg.enable();
 					}
 					
@@ -342,11 +354,8 @@
 							}
 								
 							for (var n=0; n<remove.length; n++) {
-								//console.log(remove[n][0], remove[n][1], fallRef[remove[n][0]][remove[n][1]]);
 								var end = remove[n][0]+fallRef[remove[n][0]][remove[n][1]];
 								for (var i=0; i<=end; i++) {
-									//console.log(i, remove[n][0]+fallRef[remove[n][0]][remove[n][1]]);
-									// TODO: problem area?
 									fallRef[i][remove[n][1]]++;
 								}
 							}
