@@ -116,7 +116,7 @@
 							try {
 								scene1.remove(icons[i][j]);
 							} catch (err) {
-								console.log("Error cleaning ("+i+", "+j+")");
+								console.log("Error cleaning ("+i+", "+j+")", icons[i][j]);
 							}
 						}
 					}
@@ -340,8 +340,8 @@
 						}
 					} else if (mode == "shrink") {
 						for (var i=0; i<remove.length; i++) {
-							if (remove[i][0] >= 0 && remove[i][1] >= 0)
-								icons[remove[i][0]][remove[i][1]].data({'targetScale': 1 - (t - modeTime)/swapDuration});
+							if (remove[i][0] >= 0 && remove[i][1] >= 0 && remove[i][0] < height && remove[i][1] < width)
+								icons[remove[i][0]][remove[i][1]].data({'i': icons[remove[i][0]][remove[i][1]].data().i, 'j': icons[remove[i][0]][remove[i][1]].data().j, 'targetScale': 1 - (t - modeTime)/swapDuration});
 						}
 						if (t - modeTime >= swapDuration) {
 							mode = "fall";
@@ -362,12 +362,12 @@
 							
 							// remove icons
 							for (var i=0; i<remove.length; i++)
-								if (remove[i][0] >= 0 && remove[i][1] >= 0) {
+								if (remove[i][0] >= 0 && remove[i][1] >= 0 && remove[i][0] < height && remove[i][1] < width) {
 									score++;
 									try {
 										scene1.remove(icons[remove[i][0]][remove[i][1]]);
 									} catch (err) {
-										console.log("No element found at ("+remove[i][0]+", "+remove[i][1]+")");
+										console.log("No element found at ("+remove[i][0]+", "+remove[i][1]+")", icons[remove[i][0]][remove[i][1]]);
 									}
 								}
 							
