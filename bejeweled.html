@@ -64,7 +64,7 @@
 					return array;
 				var out = [array[0]];
 				for (var i=1; i<array.length; i++) {
-					if (array[i] != array[i-1])
+					if (array[i][0] != array[i-1][0] || array[i][1] != array[i-1][1])
 						out.push(array[i]);
 				}
 				return out;
@@ -308,11 +308,11 @@
 						var i1 = icons[swap1[0]][swap1[1]];
 						var i2 = icons[swap2[0]][swap2[1]];
 						i1.data({'i': i1.data().i, 'j': i1.data().j,
-								'targetX': 16+32*swap1[1] + 32*(swap2[1] - swap1[1])*(t - modeTime)/swapDuration,
-								'targetY': 16+32*swap1[0] + 32*(swap2[0] - swap1[0])*(t - modeTime)/swapDuration});
+								'targetX': 16+32*swap1[1] + 32*(swap2[1] - swap1[1])*Math.min((t - modeTime)/swapDuration, 1),
+								'targetY': 16+32*swap1[0] + 32*(swap2[0] - swap1[0])*Math.min((t - modeTime)/swapDuration, 1)});
 						i2.data({'i': i2.data().i, 'j': i2.data().j,
-								'targetX': 16+32*swap2[1] + 32*(swap1[1] - swap2[1])*(t - modeTime)/swapDuration,
-								'targetY': 16+32*swap2[0] + 32*(swap1[0] - swap2[0])*(t - modeTime)/swapDuration});
+								'targetX': 16+32*swap2[1] + 32*(swap1[1] - swap2[1])*Math.min((t - modeTime)/swapDuration, 1),
+								'targetY': 16+32*swap2[0] + 32*(swap1[0] - swap2[0])*Math.min((t - modeTime)/swapDuration, 1)});
 						if (t - modeTime >= swapDuration) {
 							// swap on board
 							var temp = board[swap1[0]][swap1[1]];
@@ -367,6 +367,7 @@
 									try {
 										scene1.remove(icons[remove[i][0]][remove[i][1]]);
 									} catch (err) {
+										console.error(err, builderToRemove.v.id);
 										console.log("No element found at ("+remove[i][0]+", "+remove[i][1]+")", icons[remove[i][0]][remove[i][1]]);
 									}
 								}
@@ -392,7 +393,7 @@
 							for (var j=0; j<width; j++) {
 								if (fallRef[i][j] > 0)
 									icons[i][j].data({'i': icons[i][j].data().i, 'j': icons[i][j].data().j, 'targetX': 16 + 32*j,
-													'targetY': 16+32*(i-fallRef[i][j]) + 32*fallRef[i][j]*(t - modeTime)/fallDuration});
+													'targetY': 16+32*(i-fallRef[i][j]) + 32*fallRef[i][j]*Math.min((t - modeTime)/fallDuration, 1)});
 							}
 						}
 						if (t - modeTime >= fallDuration) {
